@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Pro Camera Enhancer</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #111;
+  color: white;
+  text-align: center;
+}
+
+video, canvas {
+  width: 95%;
+  max-width: 420px;
+  margin-top: 10px;
+  border-radius: 12px;
+}
+
+.controls {
+  margin: 10px;
+}
+
+input[type="range"] {
+  width: 200px;
+}
+
+button {
+  margin: 6px;
+  padding: 10px 15px;
+  border: none;
+  background: orange;
+  border-radius: 6px;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<h2>📸 Pro Camera Enhancer</h2>
+
+<video id="video" playsinline></video><br>
+
+<button onclick="startCamera()">Start Camera</button>
+<button onclick="capture()">Capture</button>
+<button onclick="autoEnhance()">Auto Enhance</button>
+
+<canvas id="canvas"></canvas>
+
+<div class="controls">
+  <p>Manual Controls</p>
+
+  Brightness<br>
+  <input type="range" id="brightness" min="50" max="150" value="100"><br>
+
+  Contrast<br>
+  <input type="range" id="contrast" min="50" max="150" value="100"><br>
+
+  Saturation<br>
+  <input type="range" id="saturation" min="50" max="150" value="100"><br>
+
+  Blur (Portrait)<br>
+  <input type="range" id="blur" min="0" max="8" value="0"><br>
+</div>
+
+<button onclick="downloadImage()">Download</button>
+
+<script>
+let video = document.getElementById("video");
+let canvas = document.getElementById("canvas");
+let ctx = canvas.getContext("2d");
+
+let brightness = document.getElementById("brightness");
+let contrast = document.getElementById("contrast");
+let saturation = document.getElementById("saturation");
+let blur = document.getElementById("blur");
+
+let captured = false;
+
+// Start Camera
+async function startCamera() {
+  const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+  video.srcObject = stream;
+
+  video.onloadedmetadata = () => {
+    video.play();
+  };
+}
+
+// Capture Image
+function capture() {
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  captured = true;
+  applyEffects();
+}
+
+// Apply Effects
+function applyEffects() {
+  if (!captured) return;
+
+  ctx.filter = `
+    brightness(${brightness.value}%)
+    contrast(${contrast.value}%)
+    saturate(${saturation.value}%)
+    blur(${blur.value}px)
+  `;
+
+  ctx.drawImage(video, 0, 0);
+
+  // Slight sharpness boost
+  let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  let data = imgData.data;
+
+  for (let i = 0; i < data.length; i += 4) {
+    data[i] *= 1.05;
+    data[i+1] *= 1.05;
+    data[i+2] *= 1.05;
+  }
+
+  ctx.putImageData(imgData, 0, 0);
+}
+
+// Auto AI Enhance
+function autoEnhance() {
+  brightness.value = 115;
+  contrast.value = 125;
+  saturation.value = 135;
+  blur.value = 1;
+  applyEffects();
+}
+
+// Live update
+brightness.oninput = applyEffects;
+contrast.oninput = applyEffects;
+saturation.oninput = applyEffects;
+blur.oninput = applyEffects;
+
+// Download
+function downloadImage() {
+  const link = document.createElement("a");
+  link.download = "pro_photo.png";
+  link.href = canvas.toDataURL();
+  link.click();
+}
+</script>
+
+</body>
+</html>
